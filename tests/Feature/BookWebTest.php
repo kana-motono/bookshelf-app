@@ -199,4 +199,23 @@ class BookWebTest extends TestCase
 
         $this->assertDatabaseCount('books', 0);
     }
+
+    public function test_guest_can_view_book_detail(): void
+    {
+        $user = User::factory()->create();
+
+        $book = Book::create([
+            'user_id' => $user->id,
+            'title' => 'ゲスト閲覧テスト',
+            'author' => 'テスト著者',
+            'isbn' => '9781234567897',
+            'published_date' => '2026-01-01',
+            'description' => 'ゲスト閲覧確認用です。',
+        ]);
+
+        $response = $this->get(route('books.show', $book));
+
+        $response->assertOk();
+        $response->assertSee('ゲスト閲覧テスト');
+    }
 }

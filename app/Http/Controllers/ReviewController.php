@@ -2,25 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ReviewRequest;
 use App\Models\Book;
 use App\Models\Review;
-use Illuminate\Http\Request;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\View\View;
 
 class ReviewController extends Controller
 {
-    public function store(Request $request, Book $book)
-    {
-        $validated = $request->validate([
-            'rating' => ['required', 'integer', 'min:1', 'max:5'],
-            'comment' => ['nullable', 'string', 'max:1000'],
-        ], [
-            'rating.required' => '評価は必須です。',
-            'rating.integer' => '評価は整数で入力してください。',
-            'rating.min' => '評価は1以上で入力してください。',
-            'rating.max' => '評価は5以下で入力してください。',
-            'comment.string' => 'コメントは文字列で入力してください。',
-            'comment.max' => 'コメントは1000文字以内で入力してください。',
-        ]);
+    public function store(
+        ReviewRequest $request,
+        Book $book
+    ): RedirectResponse {
+        $validated = $request->validated();
 
         $book->reviews()->create([
             'user_id' => $request->user()->id,
@@ -33,37 +27,27 @@ class ReviewController extends Controller
             ->with('success', 'レビューを投稿しました。');
     }
 
-    public function edit(Review $review)
+    public function edit(Review $review): View
     {
         $this->authorize('update', $review);
 
         return view('reviews.edit', compact('review'));
     }
 
-    public function update(Request $request, Review $review)
-    {
+    public function update(
+        ReviewRequest $request,
+        Review $review
+    ): RedirectResponse {
         $this->authorize('update', $review);
 
-        $validated = $request->validate([
-            'rating' => ['required', 'integer', 'min:1', 'max:5'],
-            'comment' => ['nullable', 'string', 'max:1000'],
-        ], [
-            'rating.required' => '評価は必須です。',
-            'rating.integer' => '評価は整数で入力してください。',
-            'rating.min' => '評価は1以上で入力してください。',
-            'rating.max' => '評価は5以下で入力してください。',
-            'comment.string' => 'コメントは文字列で入力してください。',
-            'comment.max' => 'コメントは1000文字以内で入力してください。',
-        ]);
-
-        $review->update($validated);
+        $review->update($request->validated());
 
         return redirect()
             ->route('books.show', $review->book)
             ->with('success', 'レビューを更新しました。');
     }
 
-    public function destroy(Review $review)
+    public function destroy(Review $review): RedirectResponse
     {
         $this->authorize('delete', $review);
 
@@ -76,7 +60,7 @@ class ReviewController extends Controller
             ->with('success', 'レビューを削除しました。');
     }
 
-    public function toggleLike(Review $review)
+    public function toggleLike(Review $review): RedirectResponse
     {
         $user = auth()->user();
 

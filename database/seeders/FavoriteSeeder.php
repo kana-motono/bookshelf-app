@@ -2,15 +2,12 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use App\Models\User;
 use App\Models\Book;
+use App\Models\User;
+use Illuminate\Database\Seeder;
 
 class FavoriteSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
         $users = User::all();
@@ -23,7 +20,10 @@ class FavoriteSeeder extends Seeder
         foreach ($users as $user) {
             // 各ユーザーに3〜5冊のお気に入りを設定
             $favoriteBooks = $books->random(rand(3, 5));
-            $user->favorites()->syncWithoutDetaching($favoriteBooks->pluck('id'));
+
+            $user->favoriteBooks()->syncWithoutDetaching(
+                $favoriteBooks->pluck('id')
+            );
         }
     }
 }

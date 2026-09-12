@@ -87,10 +87,10 @@ class AuthTest extends TestCase
         $response->assertRedirect();
     }
 
-    public function test_guest_cannot_access_books_page(): void
+    public function test_guest_can_access_books_page(): void
     {
         $response = $this->get(route('books.index'));
 
-        $response->assertRedirect(route('login'));
+        $response->assertOk();
     }
 }

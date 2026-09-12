@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\GenreRequest;
 use App\Models\Genre;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class GenreController extends Controller
@@ -21,16 +21,9 @@ class GenreController extends Controller
         return view('genres.create');
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(GenreRequest $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255', 'unique:genres,name'],
-        ], [
-            'name.required' => 'ジャンル名は必須です。',
-            'name.string' => 'ジャンル名は文字列で入力してください。',
-            'name.max' => 'ジャンル名は255文字以内で入力してください。',
-            'name.unique' => 'このジャンル名はすでに登録されています。',
-        ]);
+        $validated = $request->validated();
 
         Genre::create([
             'user_id' => $request->user()->id,
@@ -44,9 +37,11 @@ class GenreController extends Controller
 
     public function show(Genre $genre): View
     {
-        $genre->load('books');
+        $books = $genre->books()
+            ->with('genres')
+            ->paginate(10);
 
-        return view('genres.show', compact('genre'));
+        return view('genres.show', compact('genre', 'books'));
     }
 
     public function edit(Genre $genre): View
@@ -56,26 +51,14 @@ class GenreController extends Controller
         return view('genres.edit', compact('genre'));
     }
 
-    public function update(Request $request, Genre $genre): RedirectResponse
-    {
+    public function update(
+        GenreRequest $request,
+        Genre $genre
+    ): RedirectResponse {
         $this->authorize('update', $genre);
 
-        $validated = $request->validate([
-            'name' => [
-                'required',
-                'string',
-                'max:255',
-                'unique:genres,name,' . $genre->id,
-            ],
-        ], [
-            'name.required' => 'ジャンル名は必須です。',
-            'name.string' => 'ジャンル名は文字列で入力してください。',
-            'name.max' => 'ジャンル名は255文字以内で入力してください。',
-            'name.unique' => 'このジャンル名はすでに登録されています。',
-        ]);
-
         $genre->update([
-            'name' => $validated['name'],
+            'name' => $request->validated()['name'],
         ]);
 
         return redirect()

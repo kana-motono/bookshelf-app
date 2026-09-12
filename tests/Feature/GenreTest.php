@@ -30,6 +30,41 @@ class GenreTest extends TestCase
         ]);
     }
 
+    public function test_genre_detail_displays_ten_books_per_page(): void
+    {
+        $user = User::factory()->create();
+
+        $genre = Genre::create([
+            'user_id' => $user->id,
+            'name' => 'ページネーション確認',
+        ]);
+
+        for ($i = 1; $i <= 11; $i++) {
+            $book = Book::create([
+                'user_id' => $user->id,
+                'title' => 'テスト書籍' . $i,
+                'author' => 'テスト著者',
+                'isbn' => '97812345678' . str_pad((string) $i, 2, '0', STR_PAD_LEFT),
+                'published_date' => '2026-01-01',
+                'description' => 'テスト用書籍です。',
+            ]);
+
+            $book->genres()->attach($genre->id);
+        }
+
+        $response = $this
+            ->actingAs($user)
+            ->get(route('genres.show', $genre));
+
+        $response->assertOk();
+
+        $response->assertViewHas('books', function ($books) {
+            return $books->count() === 10
+                && $books->total() === 11
+                && $books->perPage() === 10;
+        });
+    }
+
     public function test_owner_can_delete_unused_genre(): void
     {
         $user = User::factory()->create();

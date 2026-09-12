@@ -3,16 +3,16 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\BookIndexRequest;
 use App\Http\Requests\Api\BookRequest;
 use App\Http\Resources\BookResource;
 use App\Models\Book;
-use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
 
 class BookController extends Controller
 {
-    public function index(Request $request): AnonymousResourceCollection
+    public function index(BookIndexRequest $request): AnonymousResourceCollection
     {
         $query = Book::query()
             ->with('genres')
@@ -37,9 +37,11 @@ class BookController extends Controller
             });
         }
 
+        $perPage = $request->integer('per_page', 20);
+
         $books = $query
             ->orderByDesc('id')
-            ->paginate(20);
+            ->paginate($perPage);
 
         return BookResource::collection($books);
     }
