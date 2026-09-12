@@ -69,12 +69,7 @@ class GenreTest extends TestCase
             ->actingAs($otherUser)
             ->delete(route('genres.destroy', $genre));
 
-        $response->assertRedirect(route('genres.index'));
-
-        $response->assertSessionHas(
-            'error',
-            'このジャンルを削除できるのは登録者本人のみです。'
-        );
+        $response->assertForbidden();
 
         $this->assertDatabaseHas('genres', [
             'id' => $genre->id,
@@ -95,12 +90,7 @@ class GenreTest extends TestCase
             ->actingAs($user)
             ->delete(route('genres.destroy', $genre));
 
-        $response->assertRedirect(route('genres.index'));
-
-        $response->assertSessionHas(
-            'error',
-            'このジャンルを削除できるのは登録者本人のみです。'
-        );
+        $response->assertForbidden();
 
         $this->assertDatabaseHas('genres', [
             'id' => $genre->id,
