@@ -1,0 +1,146 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\Book;
+use App\Models\Genre;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+class GenreTest extends TestCase
+{
+    use RefreshDatabase;
+
+    public function test_user_can_create_genre(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this
+            ->actingAs($user)
+            ->post(route('genres.store'), [
+                'name' => 'テストジャンル',
+            ]);
+
+        $response->assertRedirect(route('genres.index'));
+
+        $this->assertDatabaseHas('genres', [
+            'name' => 'テストジャンル',
+            'user_id' => $user->id,
+        ]);
+    }
+
+    public function test_owner_can_delete_unused_genre(): void
+    {
+        $user = User::factory()->create();
+
+        $genre = Genre::create([
+            'user_id' => $user->id,
+            'name' => '削除可能ジャンル',
+        ]);
+
+        $response = $this
+            ->actingAs($user)
+            ->delete(route('genres.destroy', $genre));
+
+        $response->assertRedirect(route('genres.index'));
+
+        $response->assertSessionHas(
+            'success',
+            'ジャンルを削除しました。'
+        );
+
+        $this->assertDatabaseMissing('genres', [
+            'id' => $genre->id,
+        ]);
+    }
+
+    public function test_other_user_cannot_delete_genre(): void
+    {
+        $owner = User::factory()->create();
+        $otherUser = User::factory()->create();
+
+        $genre = Genre::create([
+            'user_id' => $owner->id,
+            'name' => '他人は削除不可',
+        ]);
+
+        $response = $this
+            ->actingAs($otherUser)
+            ->delete(route('genres.destroy', $genre));
+
+        $response->assertRedirect(route('genres.index'));
+
+        $response->assertSessionHas(
+            'error',
+            'このジャンルを削除できるのは登録者本人のみです。'
+        );
+
+        $this->assertDatabaseHas('genres', [
+            'id' => $genre->id,
+            'user_id' => $owner->id,
+        ]);
+    }
+
+    public function test_seed_genre_without_owner_cannot_be_deleted(): void
+    {
+        $user = User::factory()->create();
+
+        $genre = Genre::create([
+            'user_id' => null,
+            'name' => '旅行',
+        ]);
+
+        $response = $this
+            ->actingAs($user)
+            ->delete(route('genres.destroy', $genre));
+
+        $response->assertRedirect(route('genres.index'));
+
+        $response->assertSessionHas(
+            'error',
+            'このジャンルを削除できるのは登録者本人のみです。'
+        );
+
+        $this->assertDatabaseHas('genres', [
+            'id' => $genre->id,
+            'user_id' => null,
+        ]);
+    }
+
+    public function test_owner_cannot_delete_genre_used_by_book(): void
+    {
+        $user = User::factory()->create();
+
+        $genre = Genre::create([
+            'user_id' => $user->id,
+            'name' => '使用中ジャンル',
+        ]);
+
+        $book = Book::create([
+            'user_id' => $user->id,
+            'title' => 'テスト書籍',
+            'author' => 'テスト著者',
+            'isbn' => '9781234567890',
+            'published_date' => '2026-01-01',
+            'description' => 'テスト用書籍です。',
+        ]);
+
+        $book->genres()->attach($genre->id);
+
+        $response = $this
+            ->actingAs($user)
+            ->delete(route('genres.destroy', $genre));
+
+        $response->assertRedirect(route('genres.index'));
+
+        $response->assertSessionHas(
+            'error',
+            '書籍に使用されているジャンルは削除できません。'
+        );
+
+        $this->assertDatabaseHas('genres', [
+            'id' => $genre->id,
+        ]);
+    }
+}
