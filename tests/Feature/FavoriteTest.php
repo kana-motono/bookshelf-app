@@ -113,4 +113,37 @@ class FavoriteTest extends TestCase
             'book_id' => $book->id,
         ]);
     }
+
+    public function test_authenticated_user_can_toggle_favorite_add_remove_and_add_again(): void
+    {
+        $user = User::factory()->create();
+        $book = $this->createBook($user);
+
+        $this->actingAs($user)
+            ->post(route('favorites.toggle', $book))
+            ->assertRedirect(route('books.show', $book));
+
+        $this->assertDatabaseHas('favorites', [
+            'user_id' => $user->id,
+            'book_id' => $book->id,
+        ]);
+
+        $this->actingAs($user)
+            ->post(route('favorites.toggle', $book))
+            ->assertRedirect(route('books.show', $book));
+
+        $this->assertDatabaseMissing('favorites', [
+            'user_id' => $user->id,
+            'book_id' => $book->id,
+        ]);
+
+        $this->actingAs($user)
+            ->post(route('favorites.toggle', $book))
+            ->assertRedirect(route('books.show', $book));
+
+        $this->assertDatabaseHas('favorites', [
+            'user_id' => $user->id,
+            'book_id' => $book->id,
+        ]);
+    }
 }
