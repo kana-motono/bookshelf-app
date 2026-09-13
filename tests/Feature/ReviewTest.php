@@ -265,4 +265,30 @@ class ReviewTest extends TestCase
             'review_id' => $review->id,
         ]);
     }
+
+    public function test_guest_cannot_post_review(): void
+    {
+        $user = User::factory()->create();
+
+        $book = Book::create([
+            'user_id' => $user->id,
+            'title' => 'ゲストレビュー投稿テスト',
+            'author' => 'テスト著者',
+            'isbn' => '9781234567888',
+            'published_date' => '2026-01-01',
+            'description' => 'ゲスト投稿制限の確認用です。',
+        ]);
+
+        $response = $this->post(route('reviews.store', $book), [
+            'rating' => 5,
+            'comment' => 'ゲストからのレビュー',
+        ]);
+
+        $response->assertRedirect(route('login'));
+
+        $this->assertDatabaseMissing('reviews', [
+            'book_id' => $book->id,
+            'comment' => 'ゲストからのレビュー',
+        ]);
+    }
 }
