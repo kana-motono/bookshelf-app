@@ -146,4 +146,39 @@ class FavoriteTest extends TestCase
             'book_id' => $book->id,
         ]);
     }
+
+    public function test_favorite_list_displays_ten_books_per_page(): void
+    {
+        $user = User::factory()->create();
+
+        $bookIds = [];
+
+        for ($i = 1; $i <= 11; $i++) {
+            $book = Book::create([
+                'user_id' => $user->id,
+                'title' => "お気に入り書籍{$i}",
+                'author' => 'テスト著者',
+                'isbn' => '9781234567' . str_pad((string) $i, 3, '0', STR_PAD_LEFT),
+                'published_date' => '2026-01-01',
+                'description' => "お気に入り一覧テスト用{$i}",
+            ]);
+
+            $bookIds[] = $book->id;
+        }
+
+        $user->favoriteBooks()->attach($bookIds);
+
+        $response = $this
+            ->actingAs($user)
+            ->get(route('favorites.index'));
+
+        $response->assertOk();
+
+        $books = $response->viewData('books');
+
+        $this->assertCount(10, $books);
+        $this->assertSame(11, $books->total());
+        $this->assertSame(10, $books->perPage());
+    }
+
 }
