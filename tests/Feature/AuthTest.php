@@ -93,4 +93,62 @@ class AuthTest extends TestCase
 
         $response->assertOk();
     }
+
+    public function test_registration_requires_name_email_and_password(): void
+    {
+        $response = $this->post('/register', []);
+
+        $response->assertSessionHasErrors([
+            'name',
+            'email',
+            'password',
+        ]);
+
+        $this->assertDatabaseCount('users', 0);
+    }
+
+    public function test_registration_email_must_be_unique(): void
+    {
+        User::factory()->create([
+            'email' => 'duplicate@example.com',
+        ]);
+
+        $response = $this->post('/register', [
+            'name' => '重複テスト',
+            'email' => 'duplicate@example.com',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+        ]);
+
+        $response->assertSessionHasErrors('email');
+
+        $this->assertDatabaseCount('users', 1);
+    }
+
+    public function test_registration_password_must_be_at_least_eight_characters(): void
+    {
+        $response = $this->post('/register', [
+            'name' => '短いパスワード',
+            'email' => 'short@example.com',
+            'password' => '1234567',
+            'password_confirmation' => '1234567',
+        ]);
+
+        $response->assertSessionHasErrors('password');
+
+        $this->assertDatabaseCount('users', 0);
+    }
+
+    public function test_authenticated_user_can_logout(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this
+            ->actingAs($user)
+            ->post('/logout');
+
+        $this->assertGuest();
+
+        $response->assertRedirect('/');
+    }
 }
