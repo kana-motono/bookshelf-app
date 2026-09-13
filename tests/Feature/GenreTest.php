@@ -168,4 +168,51 @@ class GenreTest extends TestCase
             'id' => $genre->id,
         ]);
     }
+
+    public function test_owner_can_update_genre(): void
+    {
+        $user = User::factory()->create();
+
+        $genre = Genre::create([
+            'user_id' => $user->id,
+            'name' => '更新前ジャンル',
+        ]);
+
+        $response = $this
+            ->actingAs($user)
+            ->put(route('genres.update', $genre), [
+                'name' => '更新後ジャンル',
+            ]);
+
+        $response->assertRedirect(route('genres.index'));
+
+        $this->assertDatabaseHas('genres', [
+            'id' => $genre->id,
+            'name' => '更新後ジャンル',
+        ]);
+    }
+
+    public function test_other_user_cannot_update_genre(): void
+    {
+        $owner = User::factory()->create();
+        $otherUser = User::factory()->create();
+
+        $genre = Genre::create([
+            'user_id' => $owner->id,
+            'name' => '他人は更新不可',
+        ]);
+
+        $response = $this
+            ->actingAs($otherUser)
+            ->put(route('genres.update', $genre), [
+                'name' => '不正更新',
+            ]);
+
+        $response->assertForbidden();
+
+        $this->assertDatabaseHas('genres', [
+            'id' => $genre->id,
+            'name' => '他人は更新不可',
+        ]);
+    }
 }
