@@ -218,4 +218,75 @@ class BookWebTest extends TestCase
         $response->assertOk();
         $response->assertSee('ゲスト閲覧テスト');
     }
+
+    public function test_guest_can_view_books_index(): void
+    {
+        $response = $this->get(route('books.index'));
+
+        $response->assertOk();
+    }
+
+    public function test_books_index_displays_ten_books_per_page(): void
+    {
+        $user = User::factory()->create();
+
+        for ($i = 1; $i <= 11; $i++) {
+            Book::create([
+                'user_id' => $user->id,
+                'title' => '一覧テスト書籍' . $i,
+                'author' => 'テスト著者',
+                'isbn' => '9781234567' . str_pad((string) $i, 3, '0', STR_PAD_LEFT),
+                'published_date' => '2026-01-01',
+                'description' => '一覧ページネーションテストです。',
+            ]);
+        }
+
+        $response = $this->get(route('books.index'));
+
+        $response->assertOk();
+
+        $response->assertViewHas('books', function ($books) {
+            return $books->count() === 10
+                && $books->total() === 11
+                && $books->perPage() === 10;
+        });
+    }
+
+    public function test_books_index_is_ordered_by_newest_first(): void
+    {
+        $user = User::factory()->create();
+
+        $olderBook = Book::create([
+            'user_id' => $user->id,
+            'title' => '古い書籍',
+            'author' => 'テスト著者',
+            'isbn' => '9781234567801',
+            'published_date' => '2026-01-01',
+            'description' => '古い書籍です。',
+        ]);
+
+        $olderBook->created_at = '2026-01-01 10:00:00';
+        $olderBook->saveQuietly();
+
+        $newerBook = Book::create([
+            'user_id' => $user->id,
+            'title' => '新しい書籍',
+            'author' => 'テスト著者',
+            'isbn' => '9781234567802',
+            'published_date' => '2026-01-02',
+            'description' => '新しい書籍です。',
+        ]);
+
+        $newerBook->created_at = '2026-01-02 10:00:00';
+        $newerBook->saveQuietly();
+
+        $response = $this->get(route('books.index'));
+
+        $response
+            ->assertOk()
+            ->assertSeeInOrder([
+                '新しい書籍',
+                '古い書籍',
+            ]);
+    }
 }
