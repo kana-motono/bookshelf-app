@@ -244,4 +244,25 @@ class ReviewTest extends TestCase
             'review_id' => $review->id,
         ]);
     }
+
+    public function test_guest_cannot_like_review(): void
+    {
+        $reviewOwner = User::factory()->create();
+        $book = $this->createBook($reviewOwner);
+
+        $review = Review::create([
+            'user_id' => $reviewOwner->id,
+            'book_id' => $book->id,
+            'rating' => 5,
+            'comment' => 'ゲストいいねテスト',
+        ]);
+
+        $response = $this->post(route('reviews.like', $review));
+
+        $response->assertRedirect(route('login'));
+
+        $this->assertDatabaseMissing('review_likes', [
+            'review_id' => $review->id,
+        ]);
+    }
 }
