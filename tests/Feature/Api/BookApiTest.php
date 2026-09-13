@@ -305,4 +305,60 @@ class BookApiTest extends TestCase
             'id' => $book->id,
         ]);
     }
+    public function test_book_list_uses_20_items_per_page_by_default(): void
+    {
+        $user = User::factory()->create();
+
+        for ($i = 1; $i <= 21; $i++) {
+            $this->createBook(
+                $user,
+                'テスト書籍' . $i,
+                '9781234567' . str_pad((string) $i, 3, '0', STR_PAD_LEFT)
+            );
+        }
+
+        $response = $this->getJson('/api/v1/books');
+
+        $response
+            ->assertOk()
+            ->assertJsonCount(20, 'data')
+            ->assertJsonPath('meta.per_page', 20)
+            ->assertJsonPath('meta.total', 21);
+    }
+
+    public function test_book_list_can_change_per_page(): void
+    {
+        $user = User::factory()->create();
+
+        for ($i = 1; $i <= 5; $i++) {
+            $this->createBook(
+                $user,
+                'テスト書籍' . $i,
+                '9781234568' . str_pad((string) $i, 3, '0', STR_PAD_LEFT)
+            );
+        }
+
+        $response = $this->getJson('/api/v1/books?per_page=3');
+
+        $response
+            ->assertOk()
+            ->assertJsonCount(3, 'data')
+            ->assertJsonPath('meta.per_page', 3)
+            ->assertJsonPath('meta.total', 5);
+    }
+
+    public function test_book_list_query_validation_returns_errors(): void
+    {
+        $response = $this->getJson(
+            '/api/v1/books?page=0&per_page=0&genre_id=999999'
+        );
+
+        $response
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors([
+                'page',
+                'per_page',
+                'genre_id',
+            ]);
+    }
 }
