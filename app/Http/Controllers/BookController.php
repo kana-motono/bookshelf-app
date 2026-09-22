@@ -6,17 +6,72 @@ use App\Http\Requests\BookRequest;
 use App\Models\Book;
 use App\Models\Genre;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class BookController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
-        $books = Book::with('genres')
-            ->latest()
-            ->paginate(10);
+        $query = Book::with('genres')
+            ->withAvg('reviews', 'rating');
 
-        return view('books.index', compact('books'));
+        // キーワード検索
+        // タイトル または 著者名に部分一致
+        if ($request->filled('keyword')) {
+            $keyword = $request->string('keyword')->toString();
+
+            $query->where(function ($q) use ($keyword) {
+                $q->where('title', 'like', '%' . $keyword . '%')
+                    ->orWhere('author', 'like', '%' . $keyword . '%');
+            });
+        }
+
+        // ジャンル絞り込み
+        if ($request->filled('genre')) {
+            $genreId = $request->integer('genre');
+
+            $query->whereHas('genres', function ($q) use ($genreId) {
+                $q->where('genres.id', $genreId);
+            });
+        }
+
+        // ソート
+        $sort = $request->input('sort', 'latest');
+
+        switch ($sort) {
+            case 'oldest':
+                $query->oldest();
+                break;
+
+            case 'title':
+                $query->orderBy('title');
+                break;
+
+            case 'rating':
+                $query
+                    ->orderByRaw('reviews_avg_rating IS NULL')
+                    ->orderByDesc('reviews_avg_rating');
+                break;
+
+            case 'latest':
+            default:
+                $query->latest();
+                break;
+        }
+
+        // withQueryString() でページ移動時にも検索条件を維持
+        $books = $query
+            ->paginate(10)
+            ->withQueryString();
+
+        $genres = Genre::orderBy('name')->get();
+
+        return view('books.index', compact(
+            'books',
+            'genres',
+            'sort'
+        ));
     }
 
     public function create(): View
@@ -63,8 +118,10 @@ class BookController extends Controller
         return view('books.edit', compact('book', 'genres'));
     }
 
-    public function update(BookRequest $request, Book $book): RedirectResponse
-    {
+    public function update(
+        BookRequest $request,
+        Book $book
+    ): RedirectResponse {
         $this->authorize('update', $book);
 
         $validated = $request->validated();

@@ -72,6 +72,27 @@ class ReviewTest extends TestCase
         $this->assertDatabaseCount('reviews', 0);
     }
 
+    public function test_review_comment_is_required(): void
+    {
+        $user = User::factory()->create();
+        $book = $this->createBook($user);
+
+        $response = $this
+            ->actingAs($user)
+            ->from(route('books.show', $book))
+            ->post(route('reviews.store', $book), [
+                'rating' => 5,
+            ]);
+
+        $response->assertRedirect(route('books.show', $book));
+
+        $response->assertSessionHasErrors([
+            'comment' => 'コメントは必須です。',
+        ]);
+
+        $this->assertDatabaseCount('reviews', 0);
+    }
+
     public function test_review_rating_must_be_between_1_and_5(): void
     {
         $user = User::factory()->create();

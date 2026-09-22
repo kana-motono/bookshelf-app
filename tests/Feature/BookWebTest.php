@@ -95,6 +95,94 @@ class BookWebTest extends TestCase
         $this->assertDatabaseCount('books', 0);
     }
 
+    public function test_book_isbn_must_be_13_digits(): void
+    {
+        $user = User::factory()->create();
+        $genre = $this->createGenre($user);
+
+        $response = $this
+            ->actingAs($user)
+            ->post(route('books.store'), [
+                'title' => 'ISBNテスト',
+                'author' => 'テスト著者',
+                'isbn' => '123456789012',
+                'published_date' => '2026-01-01',
+                'genres' => [$genre->id],
+            ]);
+
+        $response->assertSessionHasErrors([
+            'isbn' => 'ISBNは13桁で入力してください。',
+        ]);
+
+        $this->assertDatabaseCount('books', 0);
+    }
+
+    public function test_book_isbn_must_be_unique(): void
+    {
+        $user = User::factory()->create();
+        $genre = $this->createGenre($user);
+
+        $this->createBook($user);
+
+        $response = $this
+            ->actingAs($user)
+            ->post(route('books.store'), [
+                'title' => 'ISBN重複テスト',
+                'author' => 'テスト著者',
+                'isbn' => '9781234567890',
+                'published_date' => '2026-01-01',
+                'genres' => [$genre->id],
+            ]);
+
+        $response->assertSessionHasErrors([
+            'isbn' => 'そのISBNは既に使用されています。',
+        ]);
+
+        $this->assertDatabaseCount('books', 1);
+    }
+
+    public function test_book_published_date_is_required(): void
+    {
+        $user = User::factory()->create();
+        $genre = $this->createGenre($user);
+
+        $response = $this
+            ->actingAs($user)
+            ->post(route('books.store'), [
+                'title' => '出版日テスト',
+                'author' => 'テスト著者',
+                'isbn' => '9781234567894',
+                'genres' => [$genre->id],
+            ]);
+
+        $response->assertSessionHasErrors([
+            'published_date' => '出版日は必須です。',
+        ]);
+
+        $this->assertDatabaseCount('books', 0);
+    }
+
+    public function test_book_requires_at_least_one_genre(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this
+            ->actingAs($user)
+            ->post(route('books.store'), [
+                'title' => 'ジャンルテスト',
+                'author' => 'テスト著者',
+                'isbn' => '9781234567895',
+                'published_date' => '2026-01-01',
+                'genres' => [],
+            ]);
+
+        $response->assertSessionHasErrors([
+            'genres' => 'ジャンルは1つ以上選択してください。',
+        ]);
+
+        $this->assertDatabaseCount('books', 0);
+    }
+
     public function test_owner_can_update_book(): void
     {
         $user = User::factory()->create();
@@ -130,7 +218,6 @@ class BookWebTest extends TestCase
     {
         $owner = User::factory()->create();
         $otherUser = User::factory()->create();
-
         $book = $this->createBook($owner);
         $genre = $this->createGenre($owner);
 
@@ -173,7 +260,6 @@ class BookWebTest extends TestCase
     {
         $owner = User::factory()->create();
         $otherUser = User::factory()->create();
-
         $book = $this->createBook($owner);
 
         $response = $this

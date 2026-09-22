@@ -109,7 +109,9 @@ class BookApiTest extends TestCase
 
     public function test_book_detail_can_be_accessed_without_authentication(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create([
+            'name' => 'テストユーザー',
+        ]);
 
         $genre = $this->createGenre($user);
         $book = $this->createBook($user);
@@ -132,14 +134,40 @@ class BookApiTest extends TestCase
             ->assertJsonPath('data.id', $book->id)
             ->assertJsonPath('data.title', 'テスト書籍')
             ->assertJsonPath('data.review_count', 1)
-            ->assertJsonPath('data.average_rating', 5);
+            ->assertJsonPath('data.average_rating', 5)
+            ->assertJsonPath(
+                'data.reviews.0.user_name',
+                'テストユーザー'
+            )
+            ->assertJsonPath(
+                'data.reviews.0.rating',
+                5
+            )
+            ->assertJsonPath(
+                'data.reviews.0.comment',
+                '最高です。'
+            )
+            ->assertJsonStructure([
+                'data' => [
+                    'reviews' => [
+                        '*' => [
+                            'id',
+                            'user_name',
+                            'rating',
+                            'comment',
+                            'created_at',
+                        ],
+                    ],
+                ],
+            ]);
     }
-
     public function test_nonexistent_book_returns_404(): void
     {
         $response = $this->getJson('/api/v1/books/999999');
 
-        $response->assertNotFound();
+        $response
+            ->assertNotFound()
+            ->assertHeader('content-type', 'application/json');
     }
 
     public function test_unauthenticated_user_cannot_create_book(): void
@@ -359,6 +387,18 @@ class BookApiTest extends TestCase
                 'page',
                 'per_page',
                 'genre_id',
-            ]);
+            ])
+            ->assertJsonPath(
+                'errors.page.0',
+                'ページ番号は1以上の整数で入力してください。'
+            )
+            ->assertJsonPath(
+                'errors.per_page.0',
+                '1ページあたりの件数は1〜100の整数で入力してください。'
+            )
+            ->assertJsonPath(
+                'errors.genre_id.0',
+                '選択されたジャンルは存在しません。'
+            );
     }
 }
