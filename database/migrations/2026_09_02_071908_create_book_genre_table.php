@@ -4,24 +4,29 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
-    /**
-     * Run the migrations.
-     */
+return new class extends Migration {
     public function up(): void
     {
         Schema::create('book_genre', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('book_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('genre_id')->constrained()->cascadeOnDelete();
+
+            // 対象の本
+            $table->foreignId('book_id')
+                ->constrained()
+                ->cascadeOnDelete();
+
+            // 対象のジャンル
+            $table->foreignId('genre_id')
+                ->constrained()
+                ->cascadeOnDelete();
+
             $table->timestamps();
+
+            // 同じ本に同じジャンルを重複して登録できないようにする
+            $table->unique(['book_id', 'genre_id']);
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('book_genre');

@@ -4,7 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany; // ← これが必要
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Book extends Model
 {
@@ -15,25 +16,27 @@ class Book extends Model
         'title',
         'author',
         'isbn',
-        'published_date', // ← 'published_at' から変更
+        'published_date',
         'image_url',
         'description',
     ];
 
-    /**
-     * ジャンルとの多対多のリレーション
-     */
+    protected $casts = [
+        'published_date' => 'date',
+    ];
+
     public function genres(): BelongsToMany
     {
         return $this->belongsToMany(Genre::class);
     }
 
-    /**
-     * この書籍に対するレビュー一覧
-     */
-    public function reviews()
+    public function reviews(): HasMany
     {
         return $this->hasMany(Review::class);
     }
 
+    public function readingPlans(): HasMany
+    {
+        return $this->hasMany(ReadingPlan::class);
+    }
 }
