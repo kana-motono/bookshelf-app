@@ -39,7 +39,8 @@ class AuthController extends Controller
         if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
 
-            return redirect()->intended('/');
+            // ログイン成功後は書籍一覧画面へ移動する
+            return redirect()->route('books.index');
         }
 
         return back()
