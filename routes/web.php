@@ -51,6 +51,8 @@ Route::middleware(['auth'])->group(function () {
     | 書籍
     |--------------------------------------------------------------------------
     */
+    Route::get('/books/isbn/{isbn}', [BookController::class, 'searchByIsbn'])
+        ->name('books.isbn.search');
 
     Route::get('/books/create', [BookController::class, 'create'])
         ->name('books.create');
