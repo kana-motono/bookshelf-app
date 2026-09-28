@@ -10,6 +10,7 @@ use App\Models\Book;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
 
 class BookController extends Controller
 {
@@ -66,14 +67,18 @@ class BookController extends Controller
         $genres = $validated['genres'];
         unset($validated['genres']);
 
-        $book = Book::create(array_merge(
-            $validated,
-            [
-                'user_id' => $request->user()->id,
-            ]
-        ));
+        $book = DB::transaction(function () use ($validated, $genres, $request): Book {
+            $book = Book::create(array_merge(
+                $validated,
+                [
+                    'user_id' => $request->user()->id,
+                ]
+            ));
 
-        $book->genres()->sync($genres);
+            $book->genres()->sync($genres);
+
+            return $book;
+        });
 
         $book->load('genres')
             ->loadCount('reviews')
@@ -93,10 +98,10 @@ class BookController extends Controller
         $genres = $validated['genres'];
         unset($validated['genres']);
 
-        $book->update($validated);
-
-        $book->genres()->sync($genres);
-
+        DB::transaction(function () use ($book, $validated, $genres): void {
+            $book->update($validated);
+            $book->genres()->sync($genres);
+        });
         $book->load('genres')
             ->loadCount('reviews')
             ->loadAvg('reviews', 'rating');

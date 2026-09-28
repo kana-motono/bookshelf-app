@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -156,14 +157,18 @@ class BookController extends Controller
         $genres = $validated['genres'];
         unset($validated['genres']);
 
-        $book = Book::create(array_merge(
-            $validated,
-            [
-                'user_id' => $request->user()->id,
-            ]
-        ));
+        $book = DB::transaction(function () use ($validated, $genres, $request): Book {
+            $book = Book::create(array_merge(
+                $validated,
+                [
+                    'user_id' => $request->user()->id,
+                ]
+            ));
 
-        $book->genres()->sync($genres);
+            $book->genres()->sync($genres);
+
+            return $book;
+        });
 
         return redirect()
             ->route('books.show', $book)
@@ -197,8 +202,10 @@ class BookController extends Controller
         $genres = $validated['genres'];
         unset($validated['genres']);
 
-        $book->update($validated);
-        $book->genres()->sync($genres);
+        DB::transaction(function () use ($book, $validated, $genres): void {
+            $book->update($validated);
+            $book->genres()->sync($genres);
+        });
 
         return redirect()
             ->route('books.show', $book)
