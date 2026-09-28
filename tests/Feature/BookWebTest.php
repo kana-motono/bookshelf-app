@@ -95,6 +95,70 @@ class BookWebTest extends TestCase
         $this->assertDatabaseCount('books', 0);
     }
 
+    public function test_book_author_is_required(): void
+    {
+        $user = User::factory()->create();
+        $genre = $this->createGenre($user);
+
+        $response = $this
+            ->actingAs($user)
+            ->post(route('books.store'), [
+                'title' => '著者必須テスト',
+                'isbn' => '9781234567810',
+                'published_date' => '2026-01-01',
+                'genres' => [$genre->id],
+            ]);
+
+        $response->assertSessionHasErrors([
+            'author' => '著者名は必須です。',
+        ]);
+
+        $this->assertDatabaseCount('books', 0);
+    }
+
+    public function test_book_isbn_is_required(): void
+    {
+        $user = User::factory()->create();
+        $genre = $this->createGenre($user);
+
+        $response = $this
+            ->actingAs($user)
+            ->post(route('books.store'), [
+                'title' => 'ISBN必須テスト',
+                'author' => 'テスト著者',
+                'published_date' => '2026-01-01',
+                'genres' => [$genre->id],
+            ]);
+
+        $response->assertSessionHasErrors([
+            'isbn' => 'ISBNは必須です。',
+        ]);
+
+        $this->assertDatabaseCount('books', 0);
+    }
+
+    public function test_book_published_date_must_be_valid_date(): void
+    {
+        $user = User::factory()->create();
+        $genre = $this->createGenre($user);
+
+        $response = $this
+            ->actingAs($user)
+            ->post(route('books.store'), [
+                'title' => '出版日形式テスト',
+                'author' => 'テスト著者',
+                'isbn' => '9781234567811',
+                'published_date' => 'not-a-date',
+                'genres' => [$genre->id],
+            ]);
+
+        $response->assertSessionHasErrors([
+            'published_date' => '出版日は有効な日付形式で入力してください。',
+        ]);
+
+        $this->assertDatabaseCount('books', 0);
+    }
+
     public function test_book_isbn_must_be_13_digits(): void
     {
         $user = User::factory()->create();
