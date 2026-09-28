@@ -82,55 +82,61 @@ class BookController extends Controller
     }
 
     public function searchByIsbn(string $isbn): JsonResponse
-    {
-        // ISBN-13か確認する
-        if (!preg_match('/^\d{13}$/', $isbn)) {
-            return response()->json([
-                'error' => 'ISBNは13桁の数字で入力してください。',
-            ], 422);
-        }
-
-        try {
-            $response = Http::timeout(5)->get(
-                'https://www.googleapis.com/books/v1/volumes',
-                [
-                    'q' => 'isbn:' . $isbn,
-                ]
-            );
-        } catch (\Throwable $e) {
-            return response()->json([
-                'error' => '書籍情報の取得中に通信エラーが発生しました。',
-            ], 502);
-        }
-
-        // Google Books API自体が正常に応答しなかった場合
-        if ($response->failed()) {
-            return response()->json([
-                'error' => '書籍情報を取得できませんでした。',
-            ], 502);
-        }
-
-        $data = $response->json();
-
-        // ISBNに該当する書籍が見つからなかった場合
-        if (($data['totalItems'] ?? 0) === 0 || empty($data['items'])) {
-            return response()->json([
-                'error' => '該当する書籍が見つかりませんでした。',
-            ], 404);
-        }
-
-        $volumeInfo = $data['items'][0]['volumeInfo'] ?? [];
-
+{
+    if (!preg_match('/^\d{13}$/', $isbn)) {
         return response()->json([
-            'title' => $volumeInfo['title'] ?? '',
-            'author' => isset($volumeInfo['authors'])
-                ? implode(', ', $volumeInfo['authors'])
-                : '',
-            'published_date' => $volumeInfo['publishedDate'] ?? '',
-            'description' => $volumeInfo['description'] ?? '',
-            'image_url' => $volumeInfo['imageLinks']['thumbnail'] ?? '',
-        ]);
+            'error' => 'ISBNは13桁で入力してください。',
+        ], 400);
     }
+
+    try {
+        $response = Http::timeout(5)->get(
+            'https://www.googleapis.com/books/v1/volumes',
+            [
+                'q' => 'isbn:' . $isbn,
+                'key' => config('services.google_books.api_key'),
+            ]
+        );
+    } catch (\Throwable $e) {
+        return response()->json([
+            'error' => 'API通信エラーが発生しました。',
+        ], 500);
+    }
+
+    if ($response->status() === 429) {
+        return response()->json([
+            'error' => 'Google Books API のクォータを超過しました。.env に GOOGLE_BOOKS_API_KEY を設定してください。',
+        ], 429);
+    }
+
+    if ($response->failed()) {
+        return response()->json([
+            'error' => 'API通信エラーが発生しました。',
+        ], 500);
+    }
+
+    $data = $response->json();
+
+    if (($data['totalItems'] ?? 0) === 0 || empty($data['items'])) {
+        return response()->json([
+            'error' => '書籍が見つかりませんでした。',
+        ], 404);
+    }
+
+    $volumeInfo = $data['items'][0]['volumeInfo'] ?? [];
+
+    return response()->json([
+        'title' => $volumeInfo['title'] ?? '',
+        'author' => isset($volumeInfo['authors'])
+            ? implode(', ', $volumeInfo['authors'])
+            : '',
+        'published_date' => $volumeInfo['publishedDate'] ?? '',
+        'description' => $volumeInfo['description'] ?? '',
+        'image_url' => $volumeInfo['imageLinks']['thumbnail'] ?? '',
+    ]);
+}
+
+       
 
     public function create(): View
     {

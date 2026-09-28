@@ -68,9 +68,9 @@ class IsbnSearchTest extends TestCase
             ->getJson('/books/isbn/12345');
 
         $response
-            ->assertStatus(422)
+            ->assertStatus(400)
             ->assertJson([
-                'error' => 'ISBNは13桁の数字で入力してください。',
+                'error' => 'ISBNは13桁で入力してください。',
             ]);
 
         Http::assertNothingSent();
@@ -94,11 +94,36 @@ class IsbnSearchTest extends TestCase
         $response
             ->assertNotFound()
             ->assertJson([
-                'error' => '該当する書籍が見つかりませんでした。',
+                'error' => '書籍が見つかりませんでした。',
             ]);
     }
 
-    public function test_google_books_api_error_returns_502(): void
+    public function test_google_books_api_quota_error_returns_429(): void
+    {
+        Http::fake([
+            'www.googleapis.com/books/v1/volumes*' =>
+                Http::response([
+                    'error' => [
+                        'code' => 429,
+                        'status' => 'RESOURCE_EXHAUSTED',
+                    ],
+                ], 429),
+        ]);
+
+        $user = User::factory()->create();
+
+        $response = $this
+            ->actingAs($user)
+            ->getJson('/books/isbn/9784101010014');
+
+        $response
+            ->assertStatus(429)
+            ->assertJson([
+                'error' => 'Google Books API のクォータを超過しました。.env に GOOGLE_BOOKS_API_KEY を設定してください。',
+            ]);
+    }
+
+    public function test_google_books_api_error_returns_500(): void
     {
         Http::fake([
             'www.googleapis.com/books/v1/volumes*' =>
@@ -112,9 +137,9 @@ class IsbnSearchTest extends TestCase
             ->getJson('/books/isbn/9784101010014');
 
         $response
-            ->assertStatus(502)
+            ->assertStatus(500)
             ->assertJson([
-                'error' => '書籍情報を取得できませんでした。',
+                'error' => 'API通信エラーが発生しました。',
             ]);
     }
 
