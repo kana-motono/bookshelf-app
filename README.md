@@ -99,3 +99,18 @@ erDiagram
         bigint book_id FK
         bigint genre_id FK
     }
+    
+## スケジュール実行について
+
+読書計画の期限切れ更新とリマインド通知は、LaravelのConsole Commandとして実装し、
+Laravel Schedulerから毎日20:00（Asia/Tokyo）に実行する設計です。
+
+ローカル開発環境ではSchedulerを常駐させていないため、
+動作確認を行う場合は以下のコマンドを手動で実行してください。
+
+```bash
+# 読書計画の期限切れ更新
+docker compose exec laravel.test php artisan reading-plans:expire
+
+# 読書期限のリマインド通知
+docker compose exec laravel.test php artisan reading-plans:send-reminders    
