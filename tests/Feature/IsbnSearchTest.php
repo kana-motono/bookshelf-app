@@ -101,13 +101,12 @@ class IsbnSearchTest extends TestCase
     public function test_google_books_api_quota_error_returns_429(): void
     {
         Http::fake([
-            'www.googleapis.com/books/v1/volumes*' =>
-                Http::response([
-                    'error' => [
-                        'code' => 429,
-                        'status' => 'RESOURCE_EXHAUSTED',
-                    ],
-                ], 429),
+            'www.googleapis.com/books/v1/volumes*' => Http::response([
+                'error' => [
+                    'code' => 429,
+                    'status' => 'RESOURCE_EXHAUSTED',
+                ],
+            ], 429),
         ]);
 
         $user = User::factory()->create();
@@ -126,8 +125,7 @@ class IsbnSearchTest extends TestCase
     public function test_google_books_api_error_returns_500(): void
     {
         Http::fake([
-            'www.googleapis.com/books/v1/volumes*' =>
-                Http::response([], 500),
+            'www.googleapis.com/books/v1/volumes*' => Http::response([], 500),
         ]);
 
         $user = User::factory()->create();

@@ -2,65 +2,78 @@
 
 namespace Database\Seeders;
 
+use App\Enums\ReadingPlanStatus;
 use App\Models\Book;
+use App\Models\ReadingPlan;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
 
 class ReadingPlanSeeder extends Seeder
 {
     public function run(): void
     {
-        $users = User::all();
-        $books = Book::all();
+        $yamada = User::where('email', 'yamada@example.com')->first();
+        $suzuki = User::where('email', 'suzuki@example.com')->first();
 
-        if ($users->isEmpty() || $books->count() < 4) {
+        $books = Book::orderBy('id')->take(6)->get();
+
+        if (
+            $yamada === null
+            || $suzuki === null
+            || $books->count() < 6
+        ) {
             return;
         }
 
-        $user = $users->first();
+        $today = Carbon::today();
 
-        DB::table('reading_plans')->insert([
-            [
-                'user_id' => $user->id,
-                'book_id' => $books[0]->id,
-                'target_date' => now()->addDays(14)->toDateString(),
-                'status' => 'planned',
-                'completed_at' => null,
-                'reminded_at' => null,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'user_id' => $user->id,
-                'book_id' => $books[1]->id,
-                'target_date' => now()->addDays(3)->toDateString(),
-                'status' => 'planned',
-                'completed_at' => null,
-                'reminded_at' => null,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'user_id' => $user->id,
-                'book_id' => $books[2]->id,
-                'target_date' => now()->subDays(2)->toDateString(),
-                'status' => 'completed',
-                'completed_at' => now()->subDays(3),
-                'reminded_at' => null,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'user_id' => $user->id,
-                'book_id' => $books[3]->id,
-                'target_date' => now()->subDay()->toDateString(),
-                'status' => 'expired',
-                'completed_at' => null,
-                'reminded_at' => null,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
+        ReadingPlan::create([
+            'user_id' => $yamada->id,
+            'book_id' => $books[0]->id,
+            'target_date' => $today->copy()->addDays(3),
+            'status' => ReadingPlanStatus::InProgress,
+            'completed_at' => null,
+        ]);
+
+        ReadingPlan::create([
+            'user_id' => $yamada->id,
+            'book_id' => $books[1]->id,
+            'target_date' => $today->copy(),
+            'status' => ReadingPlanStatus::InProgress,
+            'completed_at' => null,
+        ]);
+
+        ReadingPlan::create([
+            'user_id' => $yamada->id,
+            'book_id' => $books[2]->id,
+            'target_date' => $today->copy()->subDays(3),
+            'status' => ReadingPlanStatus::InProgress,
+            'completed_at' => null,
+        ]);
+
+        ReadingPlan::create([
+            'user_id' => $yamada->id,
+            'book_id' => $books[3]->id,
+            'target_date' => $today->copy()->addDays(7),
+            'status' => ReadingPlanStatus::InProgress,
+            'completed_at' => null,
+        ]);
+
+        ReadingPlan::create([
+            'user_id' => $yamada->id,
+            'book_id' => $books[4]->id,
+            'target_date' => $today->copy()->subDays(10),
+            'status' => ReadingPlanStatus::Completed,
+            'completed_at' => $today->copy()->subDays(5),
+        ]);
+
+        ReadingPlan::create([
+            'user_id' => $suzuki->id,
+            'book_id' => $books[5]->id,
+            'target_date' => $today->copy()->addDays(5),
+            'status' => ReadingPlanStatus::InProgress,
+            'completed_at' => null,
         ]);
     }
 }

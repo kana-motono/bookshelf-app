@@ -98,7 +98,7 @@ class BookApiTest extends TestCase
         $book2->genres()->sync([$genre2->id]);
 
         $response = $this->getJson(
-            '/api/v1/books?genre_id=' . $genre1->id
+            '/api/v1/books?genre_id='.$genre1->id
         );
 
         $response
@@ -126,7 +126,7 @@ class BookApiTest extends TestCase
         ]);
 
         $response = $this->getJson(
-            '/api/v1/books/' . $book->id
+            '/api/v1/books/'.$book->id
         );
 
         $response
@@ -161,6 +161,7 @@ class BookApiTest extends TestCase
                 ],
             ]);
     }
+
     public function test_nonexistent_book_returns_404(): void
     {
         $response = $this->getJson('/api/v1/books/999999');
@@ -243,7 +244,7 @@ class BookApiTest extends TestCase
         Sanctum::actingAs($user);
 
         $response = $this->putJson(
-            '/api/v1/books/' . $book->id,
+            '/api/v1/books/'.$book->id,
             [
                 'title' => 'API更新後タイトル',
                 'author' => '更新後著者',
@@ -278,7 +279,7 @@ class BookApiTest extends TestCase
         Sanctum::actingAs($otherUser);
 
         $response = $this->putJson(
-            '/api/v1/books/' . $book->id,
+            '/api/v1/books/'.$book->id,
             [
                 'title' => '不正更新',
                 'author' => '不正著者',
@@ -304,7 +305,7 @@ class BookApiTest extends TestCase
         Sanctum::actingAs($user);
 
         $response = $this->deleteJson(
-            '/api/v1/books/' . $book->id
+            '/api/v1/books/'.$book->id
         );
 
         $response->assertNoContent();
@@ -324,7 +325,7 @@ class BookApiTest extends TestCase
         Sanctum::actingAs($otherUser);
 
         $response = $this->deleteJson(
-            '/api/v1/books/' . $book->id
+            '/api/v1/books/'.$book->id
         );
 
         $response->assertForbidden();
@@ -333,6 +334,7 @@ class BookApiTest extends TestCase
             'id' => $book->id,
         ]);
     }
+
     public function test_book_list_uses_20_items_per_page_by_default(): void
     {
         $user = User::factory()->create();
@@ -340,8 +342,8 @@ class BookApiTest extends TestCase
         for ($i = 1; $i <= 21; $i++) {
             $this->createBook(
                 $user,
-                'テスト書籍' . $i,
-                '9781234567' . str_pad((string) $i, 3, '0', STR_PAD_LEFT)
+                'テスト書籍'.$i,
+                '9781234567'.str_pad((string) $i, 3, '0', STR_PAD_LEFT)
             );
         }
 
@@ -361,8 +363,8 @@ class BookApiTest extends TestCase
         for ($i = 1; $i <= 5; $i++) {
             $this->createBook(
                 $user,
-                'テスト書籍' . $i,
-                '9781234568' . str_pad((string) $i, 3, '0', STR_PAD_LEFT)
+                'テスト書籍'.$i,
+                '9781234568'.str_pad((string) $i, 3, '0', STR_PAD_LEFT)
             );
         }
 
@@ -400,5 +402,78 @@ class BookApiTest extends TestCase
                 'errors.genre_id.0',
                 '選択されたジャンルは存在しません。'
             );
+    }
+
+    public function test_unauthenticated_user_cannot_update_book(): void
+    {
+        $owner = User::factory()->create();
+        $book = $this->createBook($owner);
+
+        $response = $this->putJson(
+            '/api/v1/books/'.$book->id,
+            [
+                'title' => '未認証更新',
+                'author' => '未認証著者',
+                'isbn' => $book->isbn,
+                'published_date' => '2026-02-01',
+                'genres' => [],
+            ]
+        );
+
+        $response->assertUnauthorized();
+
+        $this->assertDatabaseHas('books', [
+            'id' => $book->id,
+            'title' => 'テスト書籍',
+        ]);
+    }
+
+    public function test_unauthenticated_user_cannot_delete_book(): void
+    {
+        $owner = User::factory()->create();
+        $book = $this->createBook($owner);
+
+        $response = $this->deleteJson(
+            '/api/v1/books/'.$book->id
+        );
+
+        $response->assertUnauthorized();
+
+        $this->assertDatabaseHas('books', [
+            'id' => $book->id,
+        ]);
+    }
+
+    public function test_authenticated_update_of_nonexistent_book_returns_404(): void
+    {
+        $user = User::factory()->create();
+
+        Sanctum::actingAs($user);
+
+        $response = $this->putJson(
+            '/api/v1/books/999999',
+            [
+                'title' => '存在しない書籍',
+                'author' => 'テスト著者',
+                'isbn' => '9781234567899',
+                'published_date' => '2026-02-01',
+                'genres' => [],
+            ]
+        );
+
+        $response->assertNotFound();
+    }
+
+    public function test_authenticated_delete_of_nonexistent_book_returns_404(): void
+    {
+        $user = User::factory()->create();
+
+        Sanctum::actingAs($user);
+
+        $response = $this->deleteJson(
+            '/api/v1/books/999999'
+        );
+
+        $response->assertNotFound();
     }
 }

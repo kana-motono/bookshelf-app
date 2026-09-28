@@ -34,11 +34,14 @@ class BookController extends Controller
         ));
     }
 
+    /**
+     * 検索・絞り込み条件に一致する書籍一覧をCSV形式で出力する。
+     */
     public function exportCsv(Request $request): StreamedResponse
     {
         $books = $this->buildBookQuery($request)->get();
 
-        $fileName = 'books_' . now()->format('Ymd_His') . '.csv';
+        $fileName = 'books_'.now()->format('Ymd_His').'.csv';
 
         return response()->streamDownload(
             function () use ($books) {
@@ -81,62 +84,63 @@ class BookController extends Controller
         );
     }
 
+    /**
+     * ISBNを使用してGoogle Books APIから書籍情報を取得する。
+     */
     public function searchByIsbn(string $isbn): JsonResponse
-{
-    if (!preg_match('/^\d{13}$/', $isbn)) {
+    {
+        if (! preg_match('/^\d{13}$/', $isbn)) {
+            return response()->json([
+                'error' => 'ISBNは13桁で入力してください。',
+            ], 400);
+        }
+
+        try {
+            $response = Http::timeout(5)->get(
+                'https://www.googleapis.com/books/v1/volumes',
+                [
+                    'q' => 'isbn:'.$isbn,
+                    'key' => config('services.google_books.api_key'),
+                ]
+            );
+        } catch (\Throwable $e) {
+            return response()->json([
+                'error' => 'API通信エラーが発生しました。',
+            ], 500);
+        }
+
+        if ($response->status() === 429) {
+            return response()->json([
+                'error' => 'Google Books API のクォータを超過しました。.env に GOOGLE_BOOKS_API_KEY を設定してください。',
+            ], 429);
+        }
+
+        if ($response->failed()) {
+            return response()->json([
+                'error' => 'API通信エラーが発生しました。',
+            ], 500);
+        }
+
+        $data = $response->json();
+
+        if (($data['totalItems'] ?? 0) === 0 || empty($data['items'])) {
+            return response()->json([
+                'error' => '書籍が見つかりませんでした。',
+            ], 404);
+        }
+
+        $volumeInfo = $data['items'][0]['volumeInfo'] ?? [];
+
         return response()->json([
-            'error' => 'ISBNは13桁で入力してください。',
-        ], 400);
+            'title' => $volumeInfo['title'] ?? '',
+            'author' => isset($volumeInfo['authors'])
+                ? implode(', ', $volumeInfo['authors'])
+                : '',
+            'published_date' => $volumeInfo['publishedDate'] ?? '',
+            'description' => $volumeInfo['description'] ?? '',
+            'image_url' => $volumeInfo['imageLinks']['thumbnail'] ?? '',
+        ]);
     }
-
-    try {
-        $response = Http::timeout(5)->get(
-            'https://www.googleapis.com/books/v1/volumes',
-            [
-                'q' => 'isbn:' . $isbn,
-                'key' => config('services.google_books.api_key'),
-            ]
-        );
-    } catch (\Throwable $e) {
-        return response()->json([
-            'error' => 'API通信エラーが発生しました。',
-        ], 500);
-    }
-
-    if ($response->status() === 429) {
-        return response()->json([
-            'error' => 'Google Books API のクォータを超過しました。.env に GOOGLE_BOOKS_API_KEY を設定してください。',
-        ], 429);
-    }
-
-    if ($response->failed()) {
-        return response()->json([
-            'error' => 'API通信エラーが発生しました。',
-        ], 500);
-    }
-
-    $data = $response->json();
-
-    if (($data['totalItems'] ?? 0) === 0 || empty($data['items'])) {
-        return response()->json([
-            'error' => '書籍が見つかりませんでした。',
-        ], 404);
-    }
-
-    $volumeInfo = $data['items'][0]['volumeInfo'] ?? [];
-
-    return response()->json([
-        'title' => $volumeInfo['title'] ?? '',
-        'author' => isset($volumeInfo['authors'])
-            ? implode(', ', $volumeInfo['authors'])
-            : '',
-        'published_date' => $volumeInfo['publishedDate'] ?? '',
-        'description' => $volumeInfo['description'] ?? '',
-        'image_url' => $volumeInfo['imageLinks']['thumbnail'] ?? '',
-    ]);
-}
-
-       
 
     public function create(): View
     {
@@ -212,6 +216,9 @@ class BookController extends Controller
             ->with('success', '書籍を削除しました。');
     }
 
+    /**
+     * 検索・ジャンル絞り込み・並び替えを適用した書籍検索クエリを生成する。
+     */
     private function buildBookQuery(Request $request): Builder
     {
         $query = Book::with('genres')
@@ -225,12 +232,12 @@ class BookController extends Controller
                 $q->where(
                     'title',
                     'like',
-                    '%' . $keyword . '%'
+                    '%'.$keyword.'%'
                 )->orWhere(
-                        'author',
-                        'like',
-                        '%' . $keyword . '%'
-                    );
+                    'author',
+                    'like',
+                    '%'.$keyword.'%'
+                );
             });
         }
 

@@ -7,6 +7,7 @@ use App\Http\Requests\Api\BookIndexRequest;
 use App\Http\Requests\Api\BookRequest;
 use App\Http\Resources\BookResource;
 use App\Models\Book;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
 
@@ -23,9 +24,9 @@ class BookController extends Controller
             $keyword = $request->string('keyword')->toString();
 
             $query->where(function ($q) use ($keyword) {
-                $q->where('title', 'like', '%' . $keyword . '%')
-                    ->orWhere('author', 'like', '%' . $keyword . '%')
-                    ->orWhere('isbn', 'like', '%' . $keyword . '%');
+                $q->where('title', 'like', '%'.$keyword.'%')
+                    ->orWhere('author', 'like', '%'.$keyword.'%')
+                    ->orWhere('isbn', 'like', '%'.$keyword.'%');
             });
         }
 
@@ -58,7 +59,7 @@ class BookController extends Controller
         return new BookResource($book);
     }
 
-    public function store(BookRequest $request)
+    public function store(BookRequest $request): JsonResponse
     {
         $validated = $request->validated();
 

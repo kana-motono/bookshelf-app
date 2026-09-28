@@ -113,7 +113,7 @@ class BookSearchTest extends TestCase
         $novelBook->genres()->sync([$novel->id]);
 
         $response = $this->get(
-            '/books?genre=' . $technical->id
+            '/books?genre='.$technical->id
         );
 
         $response
@@ -272,9 +272,9 @@ class BookSearchTest extends TestCase
         for ($i = 1; $i <= 11; $i++) {
             $this->createBook(
                 $user,
-                'Laravel本' . $i,
+                'Laravel本'.$i,
                 'テスト著者',
-                '9781234567' . str_pad(
+                '9781234567'.str_pad(
                     (string) $i,
                     3,
                     '0',

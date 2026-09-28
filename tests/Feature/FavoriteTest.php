@@ -158,7 +158,7 @@ class FavoriteTest extends TestCase
                 'user_id' => $user->id,
                 'title' => "お気に入り書籍{$i}",
                 'author' => 'テスト著者',
-                'isbn' => '9781234567' . str_pad((string) $i, 3, '0', STR_PAD_LEFT),
+                'isbn' => '9781234567'.str_pad((string) $i, 3, '0', STR_PAD_LEFT),
                 'published_date' => '2026-01-01',
                 'description' => "お気に入り一覧テスト用{$i}",
             ]);
@@ -180,5 +180,4 @@ class FavoriteTest extends TestCase
         $this->assertSame(11, $books->total());
         $this->assertSame(10, $books->perPage());
     }
-
 }

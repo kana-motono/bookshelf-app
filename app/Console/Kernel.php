@@ -13,10 +13,12 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule): void
     {
         $schedule->command('reading-plans:send-reminders')
-            ->daily();
+            ->dailyAt('20:00')
+            ->timezone('Asia/Tokyo');
 
         $schedule->command('reading-plans:expire')
-            ->daily();
+            ->dailyAt('20:00')
+            ->timezone('Asia/Tokyo');
     }
 
     /**
@@ -24,7 +26,7 @@ class Kernel extends ConsoleKernel
      */
     protected function commands(): void
     {
-        $this->load(__DIR__ . '/Commands');
+        $this->load(__DIR__.'/Commands');
 
         require base_path('routes/console.php');
     }

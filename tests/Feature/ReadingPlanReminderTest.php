@@ -24,7 +24,7 @@ class ReadingPlanReminderTest extends TestCase
     private function createReadingPlan(
         User $user,
         string $targetDate,
-        ReadingPlanStatus $status = ReadingPlanStatus::Planned
+        ReadingPlanStatus $status = ReadingPlanStatus::InProgress
     ): ReadingPlan {
         $book = Book::create([
             'user_id' => $user->id,

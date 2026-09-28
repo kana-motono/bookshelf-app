@@ -24,7 +24,7 @@ class ReadingPlanExpirationTest extends TestCase
     private function createReadingPlan(
         User $user,
         string $targetDate,
-        ReadingPlanStatus $status = ReadingPlanStatus::Planned
+        ReadingPlanStatus $status = ReadingPlanStatus::InProgress
     ): ReadingPlan {
         $book = Book::create([
             'user_id' => $user->id,
@@ -40,7 +40,7 @@ class ReadingPlanExpirationTest extends TestCase
         ]);
     }
 
-    public function test_past_planned_reading_plan_becomes_expired(): void
+    public function test_past_in_progress_reading_plan_becomes_expired(): void
     {
         Carbon::setTestNow('2026-09-23 10:00:00');
 
@@ -62,7 +62,7 @@ class ReadingPlanExpirationTest extends TestCase
         );
     }
 
-    public function test_todays_planned_reading_plan_does_not_expire(): void
+    public function test_todays_in_progress_reading_plan_does_not_expire(): void
     {
         Carbon::setTestNow('2026-09-23 10:00:00');
 
@@ -79,7 +79,7 @@ class ReadingPlanExpirationTest extends TestCase
         $readingPlan->refresh();
 
         $this->assertSame(
-            ReadingPlanStatus::Planned,
+            ReadingPlanStatus::InProgress,
             $readingPlan->status
         );
     }

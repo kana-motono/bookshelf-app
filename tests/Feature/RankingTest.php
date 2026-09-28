@@ -156,8 +156,8 @@ class RankingTest extends TestCase
         for ($i = 1; $i <= 11; $i++) {
             $book = $this->createBook(
                 $user,
-                'ランキング本' . $i,
-                '9781234567' . str_pad((string) $i, 3, '0', STR_PAD_LEFT)
+                'ランキング本'.$i,
+                '9781234567'.str_pad((string) $i, 3, '0', STR_PAD_LEFT)
             );
 
             Review::create([

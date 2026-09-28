@@ -42,9 +42,9 @@ class GenreTest extends TestCase
         for ($i = 1; $i <= 11; $i++) {
             $book = Book::create([
                 'user_id' => $user->id,
-                'title' => 'テスト書籍' . $i,
+                'title' => 'テスト書籍'.$i,
                 'author' => 'テスト著者',
-                'isbn' => '97812345678' . str_pad((string) $i, 2, '0', STR_PAD_LEFT),
+                'isbn' => '97812345678'.str_pad((string) $i, 2, '0', STR_PAD_LEFT),
                 'published_date' => '2026-01-01',
                 'description' => 'テスト用書籍です。',
             ]);

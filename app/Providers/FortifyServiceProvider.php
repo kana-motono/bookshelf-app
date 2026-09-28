@@ -12,9 +12,9 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 use Laravel\Fortify\Actions\RedirectIfTwoFactorAuthenticatable;
-use Laravel\Fortify\Fortify;
-use Laravel\Fortify\Contracts\RegisterViewResponse;
 use Laravel\Fortify\Contracts\LoginViewResponse;
+use Laravel\Fortify\Contracts\RegisterViewResponse;
+use Laravel\Fortify\Fortify;
 
 class FortifyServiceProvider extends ServiceProvider
 {
@@ -39,7 +39,8 @@ class FortifyServiceProvider extends ServiceProvider
 
         // 会員登録画面のレスポンスに auth.register ビューを紐付け
         $this->app->singleton(RegisterViewResponse::class, function () {
-            return new class implements RegisterViewResponse {
+            return new class implements RegisterViewResponse
+            {
                 public function toResponse($request)
                 {
                     return view('auth.register');
@@ -49,7 +50,8 @@ class FortifyServiceProvider extends ServiceProvider
 
         // ログイン画面のレスポンスに auth.login ビューを紐付け
         $this->app->singleton(LoginViewResponse::class, function () {
-            return new class implements LoginViewResponse {
+            return new class implements LoginViewResponse
+            {
                 public function toResponse($request)
                 {
                     return view('auth.login');

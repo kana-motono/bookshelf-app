@@ -46,7 +46,7 @@ class SendReadingPlanReminders extends Command
 
     private function getTiming(ReadingPlan $readingPlan): ?string
     {
-        $today = today();
+        $today = now('Asia/Tokyo')->startOfDay();
         $targetDate = $readingPlan->target_date->copy()->startOfDay();
 
         if ($targetDate->isSameDay($today->copy()->addDays(3))) {

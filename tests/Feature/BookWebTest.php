@@ -383,9 +383,9 @@ class BookWebTest extends TestCase
         for ($i = 1; $i <= 11; $i++) {
             Book::create([
                 'user_id' => $user->id,
-                'title' => '一覧テスト書籍' . $i,
+                'title' => '一覧テスト書籍'.$i,
                 'author' => 'テスト著者',
-                'isbn' => '9781234567' . str_pad((string) $i, 3, '0', STR_PAD_LEFT),
+                'isbn' => '9781234567'.str_pad((string) $i, 3, '0', STR_PAD_LEFT),
                 'published_date' => '2026-01-01',
                 'description' => '一覧ページネーションテストです。',
             ]);
@@ -438,5 +438,140 @@ class BookWebTest extends TestCase
                 '新しい書籍',
                 '古い書籍',
             ]);
+    }
+
+    public function test_books_can_be_exported_as_csv(): void
+    {
+        $user = User::factory()->create();
+
+        $book = Book::create([
+            'user_id' => $user->id,
+            'title' => 'CSV出力テスト書籍',
+            'author' => 'CSVテスト著者',
+            'isbn' => '9781234567820',
+            'published_date' => '2026-04-01',
+            'description' => 'CSV出力確認用です。',
+        ]);
+
+        $response = $this->get(route('books.export.csv'));
+
+        $response->assertOk();
+
+        $response->assertHeader(
+            'content-type',
+            'text/csv; charset=UTF-8'
+        );
+
+        $content = $response->streamedContent();
+
+        $this->assertStringContainsString(
+            'CSV出力テスト書籍',
+            $content
+        );
+
+        $this->assertStringContainsString(
+            'CSVテスト著者',
+            $content
+        );
+
+        $this->assertStringContainsString(
+            $book->isbn,
+            $content
+        );
+    }
+
+    public function test_csv_export_applies_keyword_filter(): void
+    {
+        $user = User::factory()->create();
+
+        Book::create([
+            'user_id' => $user->id,
+            'title' => 'Laravel入門',
+            'author' => 'テスト著者A',
+            'isbn' => '9781234567821',
+            'published_date' => '2026-04-01',
+            'description' => 'Laravelの本です。',
+        ]);
+
+        Book::create([
+            'user_id' => $user->id,
+            'title' => 'PHP入門',
+            'author' => 'テスト著者B',
+            'isbn' => '9781234567822',
+            'published_date' => '2026-04-02',
+            'description' => 'PHPの本です。',
+        ]);
+
+        $response = $this->get(route('books.export.csv', [
+            'keyword' => 'Laravel',
+        ]));
+
+        $response->assertOk();
+
+        $content = $response->streamedContent();
+
+        $this->assertStringContainsString(
+            'Laravel入門',
+            $content
+        );
+
+        $this->assertStringNotContainsString(
+            'PHP入門',
+            $content
+        );
+    }
+
+    public function test_csv_export_applies_genre_filter(): void
+    {
+        $user = User::factory()->create();
+
+        $technicalGenre = Genre::create([
+            'user_id' => $user->id,
+            'name' => '技術書',
+        ]);
+
+        $novelGenre = Genre::create([
+            'user_id' => $user->id,
+            'name' => '小説',
+        ]);
+
+        $technicalBook = Book::create([
+            'user_id' => $user->id,
+            'title' => '技術書CSVテスト',
+            'author' => '技術著者',
+            'isbn' => '9781234567823',
+            'published_date' => '2026-04-01',
+            'description' => '技術書です。',
+        ]);
+
+        $novelBook = Book::create([
+            'user_id' => $user->id,
+            'title' => '小説CSVテスト',
+            'author' => '小説著者',
+            'isbn' => '9781234567824',
+            'published_date' => '2026-04-02',
+            'description' => '小説です。',
+        ]);
+
+        $technicalBook->genres()->attach($technicalGenre->id);
+        $novelBook->genres()->attach($novelGenre->id);
+
+        $response = $this->get(route('books.export.csv', [
+            'genre' => $technicalGenre->id,
+        ]));
+
+        $response->assertOk();
+
+        $content = $response->streamedContent();
+
+        $this->assertStringContainsString(
+            '技術書CSVテスト',
+            $content
+        );
+
+        $this->assertStringNotContainsString(
+            '小説CSVテスト',
+            $content
+        );
     }
 }

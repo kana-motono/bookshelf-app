@@ -51,7 +51,7 @@ class ReadingPlanController extends Controller
         $request->user()->readingPlans()->create([
             'book_id' => $request->integer('book_id'),
             'target_date' => $request->input('target_date'),
-            'status' => ReadingPlanStatus::Planned,
+            'status' => ReadingPlanStatus::InProgress,
         ]);
 
         return redirect()
@@ -61,7 +61,12 @@ class ReadingPlanController extends Controller
 
     public function edit(ReadingPlan $readingPlan): View
     {
-        $this->ensureOwner($readingPlan);
+        $this->authorize('update', $readingPlan);
+
+        abort_if(
+            $readingPlan->status === ReadingPlanStatus::Completed,
+            403
+        );
 
         return view('reading-plans.edit', compact('readingPlan'));
     }
@@ -70,7 +75,12 @@ class ReadingPlanController extends Controller
         UpdateReadingPlanRequest $request,
         ReadingPlan $readingPlan
     ): RedirectResponse {
-        $this->ensureOwner($readingPlan);
+        $this->authorize('update', $readingPlan);
+
+        abort_if(
+            $readingPlan->status === ReadingPlanStatus::Completed,
+            403
+        );
 
         $readingPlan->update([
             'target_date' => $request->input('target_date'),
@@ -84,7 +94,12 @@ class ReadingPlanController extends Controller
     public function complete(
         ReadingPlan $readingPlan
     ): RedirectResponse {
-        $this->ensureOwner($readingPlan);
+        $this->authorize('complete', $readingPlan);
+
+        abort_if(
+            $readingPlan->status === ReadingPlanStatus::Completed,
+            403
+        );
 
         $readingPlan->update([
             'status' => ReadingPlanStatus::Completed,
@@ -93,27 +108,18 @@ class ReadingPlanController extends Controller
 
         return redirect()
             ->route('reading-plans.index')
-            ->with('success', '読了として記録しました。');
+            ->with('success', '読書計画を完了しました。');
     }
 
     public function destroy(
         ReadingPlan $readingPlan
     ): RedirectResponse {
-        $this->ensureOwner($readingPlan);
+        $this->authorize('delete', $readingPlan);
 
         $readingPlan->delete();
 
         return redirect()
             ->route('reading-plans.index')
             ->with('success', '読書計画を削除しました。');
-    }
-
-    private function ensureOwner(
-        ReadingPlan $readingPlan
-    ): void {
-        abort_unless(
-            $readingPlan->user_id === auth()->id(),
-            403
-        );
     }
 }

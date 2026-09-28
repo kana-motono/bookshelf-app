@@ -2,16 +2,13 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
+use App\Models\Book;
 use App\Models\Review;
 use App\Models\User;
-use App\Models\Book;
+use Illuminate\Database\Seeder;
 
 class ReviewSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
         $users = User::all();
@@ -23,39 +20,50 @@ class ReviewSeeder extends Seeder
 
         $comments = [
             5 => [
-                '本当に素晴らしい名著です。何度も読み返したくなります。',//例
-                '目から鱗が落ちる思いでした。人生のバイブルにします。',
-                '文章が美しく、ストーリーに一気に引き込まれました。',
-                '非常に分かりやすく解説されており、すぐに実践したくなりました。',
+                '素晴らしい本でした！',
+                '人生が変わりました。',
+                '何度も読み返しています。',
             ],
             4 => [
-                '全体を通して非常にタメになりました。おすすめの一冊です。',
-                '共感できる部分が多く、最後まで一気に読み終えました。',
-                '少し難しい部分もありましたが、知的好奇心が刺激されました。',
+                'とても参考になりました。',
+                '読みやすくておすすめです。',
+                '期待通りの内容でした。',
             ],
             3 => [
-                '標準的な内容でしたが、参考になる部分もいくつかありました。',
-                '期待値が高すぎたせいか、やや物足りなさを感じました。',
+                '普通でした。',
+                '可もなく不可もなく。',
+                '期待したほどではなかった。',
+            ],
+            2 => [
+                '少し期待外れでした。',
+                '内容が薄い印象。',
+                'もう少し深掘りしてほしかった。',
+            ],
+            1 => [
+                '残念ながら合いませんでした。',
+                '期待と違いました。',
             ],
         ];
 
-        // 各書籍に2〜4件のレビューを確実に行き渡らせる（計32件目安）
-        foreach ($books as $index => $book) {
-            // 書籍ごとに2〜4件のレビューをランダムまたは順番に割り振る
-            $reviewCount = ($index % 3) + 2; // 2, 3, 4 のいずれか
-            $shuffledUsers = $users->shuffle();
+        foreach ($books as $book) {
+            $reviewCount = rand(2, 4);
 
-            for ($i = 0; $i < min($reviewCount, $users->count()); $i++) {
-                $user = $shuffledUsers[$i];
-                $rating = rand(3, 5);
+            $reviewUsers = $users->random($reviewCount);
+
+            foreach ($reviewUsers as $user) {
+                $rating = rand(1, 5);
+
                 $ratingComments = $comments[$rating];
-                $comment = $ratingComments[array_rand($ratingComments)];
+
+                $comment = $ratingComments[
+                    array_rand($ratingComments)
+                ];
 
                 Review::create([
                     'user_id' => $user->id,
                     'book_id' => $book->id,
                     'rating' => $rating,
-                    'comment' => "【{$user->name}さんの感想】" . $comment,
+                    'comment' => $comment,
                 ]);
             }
         }

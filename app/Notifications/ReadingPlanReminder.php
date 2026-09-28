@@ -13,8 +13,7 @@ class ReadingPlanReminder extends Notification
     public function __construct(
         private ReadingPlan $readingPlan,
         private string $timing
-    ) {
-    }
+    ) {}
 
     public function via(object $notifiable): array
     {
@@ -49,17 +48,13 @@ class ReadingPlanReminder extends Notification
         string $targetDate
     ): string {
         return match ($this->timing) {
-            'three_days_before' =>
-                "「{$bookTitle}」の読書期日は{$targetDate}です。",
+            'three_days_before' => "「{$bookTitle}」の読書期日は{$targetDate}です。",
 
-            'on_due_date' =>
-                "「{$bookTitle}」は今日が読書期日です。",
+            'on_due_date' => "「{$bookTitle}」は今日が読書期日です。",
 
-            'three_days_after' =>
-                "「{$bookTitle}」の読書期日{$targetDate}を3日過ぎました。",
+            'three_days_after' => "「{$bookTitle}」の読書期日{$targetDate}を3日過ぎました。",
 
-            default =>
-                "「{$bookTitle}」の読書計画を確認してください。",
+            default => "「{$bookTitle}」の読書計画を確認してください。",
         };
     }
 }

@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Book;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\View\View;
 
 class FavoriteController extends Controller
 {
-    public function index()
+    public function index(): View
     {
         $books = auth()->user()
             ->favoriteBooks()
@@ -16,7 +18,7 @@ class FavoriteController extends Controller
         return view('favorites.index', compact('books'));
     }
 
-    public function toggle(Book $book)
+    public function toggle(Book $book): RedirectResponse
     {
         auth()->user()
             ->favoriteBooks()

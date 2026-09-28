@@ -97,7 +97,7 @@ class ReportTest extends TestCase
             '読了した本'
         );
 
-        $plannedBook = $this->createBook(
+        $inProgressBook = $this->createBook(
             $user,
             'まだ読んでいる本'
         );
@@ -112,9 +112,9 @@ class ReportTest extends TestCase
 
         ReadingPlan::create([
             'user_id' => $user->id,
-            'book_id' => $plannedBook->id,
+            'book_id' => $inProgressBook->id,
             'target_date' => now()->addDays(7)->toDateString(),
-            'status' => ReadingPlanStatus::Planned,
+            'status' => ReadingPlanStatus::InProgress,
         ]);
 
         $response = $this->actingAs($user)
@@ -193,7 +193,7 @@ class ReportTest extends TestCase
                     ->pluck('title');
 
                 return $titles->contains('高評価の本')
-                    && !$titles->contains('低評価の本');
+                    && ! $titles->contains('低評価の本');
             }
         );
     }

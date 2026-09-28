@@ -15,8 +15,12 @@ class ExpireReadingPlans extends Command
     public function handle(): int
     {
         $updatedCount = ReadingPlan::query()
-            ->where('status', ReadingPlanStatus::Planned->value)
-            ->whereDate('target_date', '<', today())
+            ->where('status', ReadingPlanStatus::InProgress->value)
+            ->whereDate(
+                'target_date',
+                '<',
+                now('Asia/Tokyo')->toDateString()
+            )
             ->update([
                 'status' => ReadingPlanStatus::Expired->value,
             ]);

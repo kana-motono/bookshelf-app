@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class BookUpdateRequest extends FormRequest
@@ -17,7 +18,7 @@ class BookUpdateRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
@@ -28,7 +29,7 @@ class BookUpdateRequest extends FormRequest
             'title' => ['required', 'string', 'max:255'],
             'author' => ['required', 'string', 'max:255'],
             // 自分のIDを除外してISBNの重複をチェック
-            'isbn' => ['required', 'string', 'size:13', 'unique:books,isbn,' . $bookId],
+            'isbn' => ['required', 'string', 'size:13', 'unique:books,isbn,'.$bookId],
             'published_date' => ['required', 'date'],
             'genre_id' => ['required', 'exists:genres,id'],
             'image_url' => ['nullable', 'url', 'max:255'],
